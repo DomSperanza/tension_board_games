@@ -107,11 +107,15 @@ test('thick bars slide in from above and are spaced one row further apart', () =
   assert.equal(ticks, 1 + ROWS + 1);
 });
 
-test('speed increases every N bars down to the minimum', () => {
-  const game = createGame({ rowSeconds: 1, minRowSeconds: 0.8, speedUpEvery: 1, speedUpFactor: 0.5, barSpacing: 1, thickBars: false }, seeded());
-  for (let t = 0; t < ROWS + 3; t++) tick(game);
-  assert.ok(game.score >= 2);
-  assert.equal(game.rowSeconds, 0.8);
+test('speed steps up every N bars and holds at top speed from level 5', () => {
+  const game = createGame({ rowSeconds: 1, minRowSeconds: 0.6, speedUpEvery: 1, barSpacing: 1, thickBars: false }, seeded());
+  const seen = [];
+  while (game.score < 8) {
+    tick(game);
+    if (seen.at(-1) !== game.rowSeconds) seen.push(game.rowSeconds);
+  }
+  assert.deepEqual(seen.map((s) => +s.toFixed(3)), [1, 0.9, 0.8, 0.7, 0.6]);
+  assert.equal(game.speedLevel, 4, 'shown as Speed 5');
 });
 
 test('rendered frame has one color per lit position', () => {

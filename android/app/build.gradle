@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+// The app version comes from package.json, e.g. 0.2.0 -> versionName "0.2.0", versionCode 200.
+def appVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+def appVersionCode = appVersion.tokenize('.').collect { it as int }.inject(0) { code, part -> code * 100 + part }
+
 android {
     namespace = "com.tensionboardgames.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,14 +11,18 @@ android {
         applicationId "com.tensionboardgames.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    // APKs come out as tension_games_V<version>.apk (see npm run android:apk, which copies them to dist/).
+    applicationVariants.all { variant ->
+        variant.outputs.all { outputFileName = "tension_games_V${variant.versionName}.apk" }
     }
     buildTypes {
         release {

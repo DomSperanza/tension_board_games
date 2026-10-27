@@ -43,6 +43,9 @@ export function createBoard({ id, family, name, kickboardTop, leds }) {
     return hole?.main ? hole.position : undefined;
   }
 
+  // LED position of any hole (main or offset) at board coordinates (x, y), or undefined.
+  const holeAt = (x, y) => byXY.get(`${x},${y}`)?.position;
+
   // Light a bitmap (array of strings, '#' = on) onto the main grid, centred by default.
   function bitmapPositions(bitmap, { col, row } = {}) {
     const width = Math.max(...bitmap.map((line) => line.length));
@@ -73,6 +76,7 @@ export function createBoard({ id, family, name, kickboardTop, leds }) {
     colToX,
     rowToY,
     gridPosition,
+    holeAt,
     bitmapPositions,
   };
 }

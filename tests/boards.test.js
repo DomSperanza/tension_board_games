@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { BOARD_LIST, getBoard } from '../src/js/layout.js';
 import { createGame, tick, renderFrame, DIFFICULTIES } from '../src/js/game.js';
 import { createReach, advanceReach, renderReach, REACH_DIFFICULTIES } from '../src/js/reach.js';
-import { createRecall, advanceRecall, RECALL_DIFFICULTIES } from '../src/js/recall.js';
 import { BIG, goBitmap, numberBitmap } from '../src/js/font.js';
+import { createBarrage, stepBarrage, renderBarrage, fireCannon, moveCannon, alienCol, BARRAGE_DIFFICULTIES } from '../src/js/barrage.js';
+import { createSerpent, stepSerpent, renderSerpent, steerSerpent, SERPENT_DIFFICULTIES } from '../src/js/serpent.js';
 
 const seeded = (seed = 1) => () => {
   seed = (seed * 16807) % 2147483647;
@@ -69,18 +70,39 @@ for (const board of boards) {
     }
   });
 
-  test(`${board.name}: Recall problems stay on the board, in reach and above the bottom rows`, () => {
-    for (const [mode, { settings }] of Object.entries(RECALL_DIFFICULTIES)) {
-      const game = createRecall(settings, seeded(11), board);
-      while (game.sequence.length < 20) advanceRecall(game, 0.5);
-      const lowest = board.rows - 1 - game.settings.bottomMargin;
-      const seen = new Set();
-      for (const h of game.sequence) {
-        assert.ok(h.col >= 0 && h.col < board.cols && h.row >= 0 && h.row <= lowest, `${mode}: off board`);
-        assert.notEqual(board.gridPosition(h.col, h.row), undefined, `${mode}: no hold at ${h.col},${h.row}`);
-        seen.add(`${h.col},${h.row}`);
+  test(`${board.name}: Barrage aliens and bolts stay on the board, solo and co-op`, () => {
+    for (const [mode, { settings }] of Object.entries(BARRAGE_DIFFICULTIES)) {
+      for (const coop of [false, true]) {
+        const game = createBarrage({ ...settings, coop }, seeded(13), board);
+        assert.ok(game.aliens.length >= 2, `${mode}: only ${game.aliens.length} aliens`);
+        for (let t = 0; t < 200; t++) {
+          if (coop && t % 3 === 0) {
+            moveCannon(game, t % 2 ? 1 : -1);
+            fireCannon(game);
+          }
+          stepBarrage(game);
+          for (const a of game.aliens) assert.ok(alienCol(game, a) >= 0 && alienCol(game, a) < board.cols, `${mode}: alien off board`);
+          for (const b of game.bolts) assert.ok(b.col >= 0 && b.col < board.cols);
+          renderBarrage(game);
+        }
+        assert.ok(game.score > 0, `${mode}/${coop}: never scored`);
       }
-      assert.equal(seen.size, game.sequence.length, `${mode}: a hold repeats`);
+    }
+  });
+
+  test(`${board.name}: Serpent roams without crashing, solo and co-op`, () => {
+    for (const [mode, { settings }] of Object.entries(SERPENT_DIFFICULTIES)) {
+      for (const coop of [false, true]) {
+        const game = createSerpent({ ...settings, coop }, seeded(17), board);
+        for (let t = 0; t < 400; t++) {
+          if (coop && t % 5 === 0) steerSerpent(game, ['up', 'left', 'down', 'right'][Math.floor(t / 5) % 4]);
+          stepSerpent(game);
+          const cells = new Set(game.body.map((c) => `${c.col},${c.row}`));
+          assert.equal(cells.size, game.body.length, `${mode}/${coop}: overlaps itself`);
+          for (const c of game.body) assert.ok(c.col >= 0 && c.col < board.cols && c.row >= 0 && c.row < board.rows);
+        }
+        assert.ok(renderSerpent(game).size > game.body.length);
+      }
     }
   });
 }

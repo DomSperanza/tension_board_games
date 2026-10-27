@@ -39,8 +39,10 @@
         <div><span class="label">Best</span><span class="value" id="best">0</span></div>
       </div>
       <div class="modes" id="modes" role="radiogroup" aria-label="Difficulty"></div>
+      <label class="coop" id="coop-row" hidden><input type="checkbox" id="coop"> <span id="coop-label"></span></label>
       <div class="big-message" id="message">Ready</div>
       <button id="btn-main" class="huge">Start</button>
+      <div class="pad" id="pad" hidden></div>
     </section>
 
     <section class="card custom" id="custom" hidden>
@@ -78,11 +80,17 @@
         <li>Green, yellow, red: time's running out.</li>
         <li>Didn't make it? Hit <strong>I'm out</strong>.</li>
       </ul>
-      <ul class="rules" data-rules="recall" hidden>
-        <li>Get on the yellow start hold.</li>
-        <li>Watch the problem play back: green start, blue hands, pink finish.</li>
-        <li>Lights off: climb it from memory before time runs out.</li>
-        <li>Every round adds one hold. Wrong hold or forgot? Hit <strong>I'm out</strong>.</li>
+      <ul class="rules" data-rules="barrage" hidden>
+        <li>Aliens march along the top and drop red bolts.</li>
+        <li>Bolts are lava: traverse out of the way.</li>
+        <li>Co-op: the phone player moves the blue cannon and fires. Shots stop bolts and destroy aliens.</li>
+        <li>Touched a bolt? Hit <strong>I'm out</strong>.</li>
+      </ul>
+      <ul class="rules" data-rules="serpent" hidden>
+        <li>A snake roams the wall eating apples and growing.</li>
+        <li>The snake is lava. Apples are safe.</li>
+        <li>Co-op: the phone player steers the snake. Hunt the climber!</li>
+        <li>Touched the snake? Hit <strong>I'm out</strong>.</li>
       </ul>
       <ul class="rules">
         <li>Close the Tension app before connecting.</li>

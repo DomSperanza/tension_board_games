@@ -5,22 +5,22 @@
 // The cluster goes green -> yellow -> red as time runs low. Honor system: not on it in time = out.
 
 import { DEFAULT_BOARD } from './layout.js';
+import { rampValue, levelUp } from './ramp.js';
 
 export const REACH_DEFAULTS = {
-  timeLimit: 10, // seconds for the first cluster
-  minTimeLimit: 5.5,
-  shrinkEvery: 3, // clusters reached between time cuts
-  shrinkBy: 0.5, // seconds cut each time
+  timeLimit: 8, // seconds for the first cluster
+  minTimeLimit: 4.5, // seconds per cluster at top speed (level 5)
+  shrinkEvery: 2, // clusters reached between time cuts
   clusterSize: 3, // main-grid holds per side of the square cluster
   minDistance: 7, // min grid distance between consecutive clusters
   bottomMargin: 3, // keep clusters this many rows above the bottom so they're hand targets
 };
 
 export const REACH_DIFFICULTIES = {
-  beginner: { label: 'Beginner', settings: { timeLimit: 12, minTimeLimit: 7.5, shrinkEvery: 4, clusterSize: 3, minDistance: 6 } },
-  intermediate: { label: 'Intermediate', settings: { timeLimit: 10, minTimeLimit: 5.5, shrinkEvery: 3, clusterSize: 3, minDistance: 7 } },
-  hard: { label: 'Hard', settings: { timeLimit: 8, minTimeLimit: 4, shrinkEvery: 3, clusterSize: 2, minDistance: 8 } },
-  impossible: { label: 'Impossible', settings: { timeLimit: 6, minTimeLimit: 3, shrinkEvery: 2, clusterSize: 2, minDistance: 9 } },
+  beginner: { label: 'Beginner', settings: { timeLimit: 10, minTimeLimit: 6, shrinkEvery: 2, clusterSize: 3, minDistance: 6 } },
+  intermediate: { label: 'Intermediate', settings: { timeLimit: 8, minTimeLimit: 4.5, shrinkEvery: 2, clusterSize: 3, minDistance: 7 } },
+  hard: { label: 'Hard', settings: { timeLimit: 6.5, minTimeLimit: 3.5, shrinkEvery: 2, clusterSize: 2, minDistance: 8 } },
+  impossible: { label: 'Impossible', settings: { timeLimit: 5, minTimeLimit: 2.5, shrinkEvery: 1, clusterSize: 2, minDistance: 9 } },
 };
 
 const GREEN = [0, 255, 0];
@@ -30,7 +30,7 @@ const RED = [255, 0, 0];
 export function createReach(settings = REACH_DEFAULTS, random = Math.random, board = DEFAULT_BOARD) {
   const s = { ...REACH_DEFAULTS, ...settings };
   s.minTimeLimit = Math.min(s.minTimeLimit, s.timeLimit); // custom mode can set these in any order
-  const game = { settings: s, board, random, score: 0, timeLimit: s.timeLimit, timeLeft: s.timeLimit, target: null };
+  const game = { settings: s, board, random, score: 0, speedLevel: 0, timeLimit: s.timeLimit, timeLeft: s.timeLimit, target: null };
   game.target = nextTarget(game);
   return game;
 }
@@ -67,10 +67,8 @@ export function advanceReach(game, dt) {
   if (game.timeLeft > 1e-9) return { scored: false };
 
   game.score += 1;
-  const { shrinkEvery, shrinkBy, minTimeLimit } = game.settings;
-  if (shrinkEvery > 0 && game.score % shrinkEvery === 0) {
-    game.timeLimit = Math.max(minTimeLimit, game.timeLimit - shrinkBy);
-  }
+  const { shrinkEvery, timeLimit, minTimeLimit } = game.settings;
+  if (levelUp(game, shrinkEvery)) game.timeLimit = rampValue(timeLimit, minTimeLimit, game.speedLevel);
   game.timeLeft = game.timeLimit;
   game.target = nextTarget(game);
   return { scored: true };

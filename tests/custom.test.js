@@ -4,12 +4,14 @@ import { CUSTOM_FIELDS } from '../src/js/custom.js';
 import { BOARD_LIST, getBoard, DEFAULT_BOARD } from '../src/js/layout.js';
 import { createGame, tick, DEFAULT_SETTINGS, DIFFICULTIES } from '../src/js/game.js';
 import { createReach, advanceReach, REACH_DEFAULTS, REACH_DIFFICULTIES } from '../src/js/reach.js';
-import { createRecall, advanceRecall, RECALL_DEFAULTS, RECALL_DIFFICULTIES } from '../src/js/recall.js';
+import { BARRAGE_DEFAULTS, BARRAGE_DIFFICULTIES } from '../src/js/barrage.js';
+import { SERPENT_DEFAULTS, SERPENT_DIFFICULTIES } from '../src/js/serpent.js';
 
 const GAMES = {
   drop: { defaults: DEFAULT_SETTINGS, presets: DIFFICULTIES },
   reach: { defaults: REACH_DEFAULTS, presets: REACH_DIFFICULTIES },
-  recall: { defaults: RECALL_DEFAULTS, presets: RECALL_DIFFICULTIES },
+  barrage: { defaults: BARRAGE_DEFAULTS, presets: BARRAGE_DIFFICULTIES },
+  serpent: { defaults: SERPENT_DEFAULTS, presets: SERPENT_DIFFICULTIES },
 };
 
 test('every custom slider edits a real game setting', () => {
@@ -38,12 +40,6 @@ test('every preset fits inside the custom slider ranges on every board', () => {
   }
 });
 
-test('speed-up amount slider round-trips the stored factor', () => {
-  const f = CUSTOM_FIELDS.drop.find((x) => x.key === 'speedUpFactor');
-  assert.equal(f.toUi(0.9), 10);
-  assert.ok(Math.abs(f.fromUi(10) - 0.9) < 1e-9);
-});
-
 test('custom values in a strange order still play', () => {
   const drop = createGame({ rowSeconds: 0.5, minRowSeconds: 2, gapWidth: 99, sideJitter: 9 }, Math.random, DEFAULT_BOARD);
   assert.equal(drop.settings.minRowSeconds, 0.5);
@@ -55,12 +51,5 @@ test('custom values in a strange order still play', () => {
   assert.equal(reach.settings.minTimeLimit, 3);
   let scored = 0;
   for (let t = 0; t < 100; t++) if (advanceReach(reach, 0.5).scored) scored++;
-  assert.ok(scored > 0);
-
-  const recall = createRecall({ minReach: 5, maxReach: 1, startLength: 8 });
-  assert.equal(recall.settings.minReach, 1);
-  assert.equal(recall.sequence.length, 8);
-  scored = 0;
-  for (let t = 0; t < 2000; t++) if (advanceRecall(recall, 0.5).scored) scored++;
   assert.ok(scored > 0);
 });

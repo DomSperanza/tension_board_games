@@ -7,13 +7,13 @@
 // Honor system: touching a lit hold means you're out.
 
 import { DEFAULT_BOARD } from './layout.js';
+import { rampValue, levelUp } from './ramp.js';
 
 export const DEFAULT_SETTINGS = {
   gapWidth: 5, // holds
-  rowSeconds: 1.2, // starting time per row drop
-  minRowSeconds: 0.6,
-  speedUpEvery: 3, // bars cleared between speed-ups (0 = never)
-  speedUpFactor: 0.9,
+  rowSeconds: 0.8, // starting time per row drop
+  minRowSeconds: 0.45, // time per row at top speed (level 5)
+  speedUpEvery: 2, // bars cleared between speed-ups (0 = never)
   barSpacing: 14, // rows between consecutive bars (thick bars add their extra row on top)
   sideJitter: 2, // how many columns in from the edge a gap may sit
   thickBars: true, // two main rows + the offset holds between them
@@ -24,19 +24,19 @@ export const DEFAULT_SETTINGS = {
 export const DIFFICULTIES = {
   beginner: {
     label: 'Beginner',
-    settings: { gapWidth: 7, rowSeconds: 1.6, minRowSeconds: 1.0, barSpacing: 18, sideJitter: 1, speedUpEvery: 5, speedUpFactor: 0.93 },
+    settings: { gapWidth: 7, rowSeconds: 1.1, minRowSeconds: 0.7, barSpacing: 16, sideJitter: 1, speedUpEvery: 2 },
   },
   intermediate: {
     label: 'Intermediate',
-    settings: { gapWidth: 5, rowSeconds: 1.2, minRowSeconds: 0.7, barSpacing: 14, sideJitter: 2, speedUpEvery: 3, speedUpFactor: 0.9 },
+    settings: { gapWidth: 5, rowSeconds: 0.8, minRowSeconds: 0.45, barSpacing: 14, sideJitter: 2, speedUpEvery: 2 },
   },
   hard: {
     label: 'Hard',
-    settings: { gapWidth: 4, rowSeconds: 0.9, minRowSeconds: 0.55, barSpacing: 12, sideJitter: 2, speedUpEvery: 3, speedUpFactor: 0.88 },
+    settings: { gapWidth: 4, rowSeconds: 0.6, minRowSeconds: 0.35, barSpacing: 12, sideJitter: 2, speedUpEvery: 2 },
   },
   impossible: {
     label: 'Impossible',
-    settings: { gapWidth: 3, rowSeconds: 0.6, minRowSeconds: 0.4, barSpacing: 10, sideJitter: 3, speedUpEvery: 2, speedUpFactor: 0.85 },
+    settings: { gapWidth: 3, rowSeconds: 0.45, minRowSeconds: 0.28, barSpacing: 10, sideJitter: 3, speedUpEvery: 1 },
   },
 };
 
@@ -83,11 +83,8 @@ export function tick(game) {
 
   for (let i = 0; i < cleared; i++) {
     game.score += 1;
-    const { speedUpEvery, speedUpFactor, minRowSeconds } = game.settings;
-    if (speedUpEvery > 0 && game.score % speedUpEvery === 0) {
-      game.speedLevel += 1;
-      game.rowSeconds = Math.max(minRowSeconds, game.rowSeconds * speedUpFactor);
-    }
+    const { speedUpEvery, rowSeconds, minRowSeconds } = game.settings;
+    if (levelUp(game, speedUpEvery)) game.rowSeconds = rampValue(rowSeconds, minRowSeconds, game.speedLevel);
   }
 
   // bar.row is the bar's top row. New bars slide in from above, so only their bottom row shows at first.

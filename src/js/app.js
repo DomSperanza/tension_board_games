@@ -3,7 +3,17 @@
 import { AuroraConnection, isBluetoothSupported } from './ble.js';
 import { createGame, tick, renderFrame, DEFAULT_SETTINGS, DIFFICULTIES } from './game.js';
 import { createReach, advanceReach, renderReach, REACH_DEFAULTS, REACH_DIFFICULTIES } from './reach.js';
-import { createRecall, advanceRecall, renderRecall, recallMessage, RECALL_DEFAULTS, RECALL_DIFFICULTIES } from './recall.js';
+import {
+  createBarrage,
+  stepBarrage,
+  renderBarrage,
+  barrageMessage,
+  moveCannon,
+  fireCannon,
+  BARRAGE_DEFAULTS,
+  BARRAGE_DIFFICULTIES,
+} from './barrage.js';
+import { createSerpent, stepSerpent, renderSerpent, serpentMessage, steerSerpent, SERPENT_DEFAULTS, SERPENT_DIFFICULTIES } from './serpent.js';
 import { CUSTOM_FIELDS, renderCustomPanel } from './custom.js';
 import { getBoard, BOARD_LIST, DEFAULT_BOARD_ID } from './layout.js';
 import { isNativeApp, loadPlugins } from './native.js';
@@ -19,7 +29,7 @@ const $ = (id) => document.getElementById(id);
 // ---------- persistence (best effort; private mode may block storage) ----------
 
 const STORE_KEY = 'tensiongames.settings.v1';
-const BEST_KEY = 'tensiongames.bests'; // { [difficulty]: score } for Gap Drop, { ['reach.' + difficulty]: score } for Reach
+const BEST_KEY = 'tensiongames.bests'; // { [difficulty]: score } for Gap Drop, { [game(-coop).difficulty]: score } for the rest
 const load = (key, fallback) => {
   try {
     const raw = localStorage.getItem(key);
@@ -39,9 +49,13 @@ const save = (key, value) => {
 // ---------- games ----------
 
 const REACH_STEP_SECONDS = 0.1;
-const RECALL_STEP_SECONDS = 0.1;
+
+// Games that move in whole steps at their own (speeding up) pace.
+const stepEvery = (step) => (g) => ({ scored: step(g).scored, delayMs: g.rowSeconds * 1000 });
+const speedStat = (g) => (g?.speedLevel ?? 0) + 1;
 
 // Each game: difficulty presets, how one step plays out, what the board shows, and the middle stat.
+// coop (optional): a second player on the phone, with the buttons they get. `area` places a button on the pad.
 const GAMES = {
   drop: {
     label: 'Gap Drop',
@@ -55,7 +69,7 @@ const GAMES = {
     render: (g) => renderFrame(g),
     message: () => 'Climb!',
     statLabel: 'Speed',
-    stat: (g) => (g?.speedLevel ?? 0) + 1,
+    stat: speedStat,
   },
   reach: {
     label: 'Reach',
@@ -71,19 +85,46 @@ const GAMES = {
     statLabel: 'Time',
     stat: (g, preset) => `${(g?.timeLimit ?? preset.timeLimit).toFixed(1)}s`,
   },
-  recall: {
-    label: 'Recall',
-    defaults: RECALL_DEFAULTS,
-    presets: RECALL_DIFFICULTIES,
-    create: createRecall,
-    step(g) {
-      const { scored } = advanceRecall(g, RECALL_STEP_SECONDS);
-      return { scored, delayMs: RECALL_STEP_SECONDS * 1000 };
+  barrage: {
+    label: 'Barrage',
+    defaults: BARRAGE_DEFAULTS,
+    presets: BARRAGE_DIFFICULTIES,
+    create: createBarrage,
+    step: stepEvery(stepBarrage),
+    render: (g) => renderBarrage(g),
+    message: (g) => barrageMessage(g),
+    statLabel: 'Speed',
+    stat: speedStat,
+    coop: {
+      label: 'Co-op: a second player fires back from the phone',
+      layout: 'row',
+      controls: [
+        { label: '◀', area: 'left', keys: ['ArrowLeft'], press: (g) => moveCannon(g, -1) },
+        { label: 'Fire', area: 'fire', keys: ['ArrowUp', 'KeyF'], press: (g) => fireCannon(g) },
+        { label: '▶', area: 'right', keys: ['ArrowRight'], press: (g) => moveCannon(g, 1) },
+      ],
     },
-    render: (g) => renderRecall(g),
-    message: (g) => recallMessage(g),
-    statLabel: 'Holds',
-    stat: (g, preset) => g?.sequence.length ?? preset.startLength ?? RECALL_DEFAULTS.startLength,
+  },
+  serpent: {
+    label: 'Serpent',
+    defaults: SERPENT_DEFAULTS,
+    presets: SERPENT_DIFFICULTIES,
+    create: createSerpent,
+    step: stepEvery(stepSerpent),
+    render: (g) => renderSerpent(g),
+    message: (g) => serpentMessage(g),
+    statLabel: 'Speed',
+    stat: speedStat,
+    coop: {
+      label: 'Co-op: a second player steers the snake from the phone',
+      layout: 'dpad',
+      controls: ['up', 'left', 'down', 'right'].map((dir) => ({
+        label: { up: '▲', left: '◀', down: '▼', right: '▶' }[dir],
+        area: dir,
+        keys: [`Arrow${dir[0].toUpperCase()}${dir.slice(1)}`],
+        press: (g) => steerSerpent(g, dir),
+      })),
+    },
   },
 };
 
@@ -95,11 +136,13 @@ const UI_DEFAULTS = {
   showAllDevices: false,
   apiLevel: 'auto',
   custom: {}, // { [gameType]: full settings edited in Custom mode }
+  coop: {}, // { [gameType]: true when a second player joins in }
 };
 const settings = { ...UI_DEFAULTS, ...load(STORE_KEY, {}) };
 if (!GAMES[settings.gameType]) settings.gameType = UI_DEFAULTS.gameType;
 if (!DIFFICULTIES[settings.difficulty] && settings.difficulty !== 'custom') settings.difficulty = UI_DEFAULTS.difficulty;
 settings.custom ??= {};
+settings.coop ??= {};
 let board = getBoard(settings.boardId);
 settings.boardId = board.id;
 let showOnPreview = createPreview($('preview'), board);
@@ -114,8 +157,10 @@ const currentPreset = () =>
   settings.difficulty === 'custom'
     ? (settings.custom[settings.gameType] ??= presetValues(settings.gameType, 'intermediate'))
     : currentGame().presets[settings.difficulty].settings;
+const coopOn = () => !!currentGame().coop && !!settings.coop[settings.gameType];
 const bests = load(BEST_KEY, {}) || {};
-const bestKey = () => (settings.gameType === 'drop' ? settings.difficulty : `${settings.gameType}.${settings.difficulty}`);
+const bestKey = () =>
+  settings.gameType === 'drop' ? settings.difficulty : `${settings.gameType}${coopOn() ? '-coop' : ''}.${settings.difficulty}`;
 const bestScore = () => Number(bests[bestKey()]) || 0;
 
 // ---------- board output ----------
@@ -186,6 +231,7 @@ let phase = 'idle'; // idle | getready | countdown | playing | over
 let runId = 0;
 let game = null;
 let runGame = null; // the GAMES entry for the run in progress
+let shown = ''; // key of the frame on the board, so unchanged frames aren't sent again
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const setMessage = (text) => ($('message').textContent = text);
@@ -196,7 +242,7 @@ async function startRun() {
   unlockAudio();
   holdWake();
   runGame = currentGame();
-  game = runGame.create(currentPreset(), Math.random, board);
+  game = runGame.create({ ...currentPreset(), coop: coopOn() }, Math.random, board);
   updateScore();
   display(new Map());
 
@@ -223,23 +269,35 @@ async function startRun() {
 
   setPhase('playing');
   display(new Map());
-  let shown = '';
+  shown = '';
   while (alive()) {
     const { scored, delayMs } = runGame.step(game);
     if (scored) {
       beep(880, 90);
       updateScore();
     }
-    // Only send when the lights change: Reach steps often but its cluster rarely changes.
-    const frame = runGame.render(game);
-    const key = frameKey(frame);
-    if (key !== shown) {
-      display(frame);
-      shown = key;
-    }
-    setMessage(runGame.message(game));
+    showGame();
     await sleep(delayMs);
   }
+}
+
+// Only send when the lights change: Reach steps often but its cluster rarely changes.
+function showGame() {
+  const frame = runGame.render(game);
+  const key = frameKey(frame);
+  if (key !== shown) {
+    display(frame);
+    shown = key;
+  }
+  setMessage(runGame.message(game));
+}
+
+// A co-op button press acts straight away instead of waiting for the next step.
+function coopPress(control) {
+  if (phase !== 'playing' || !game?.settings.coop) return;
+  if (control.press(game) !== false) beep(control.area === 'fire' ? 1200 : 520, 40);
+  showGame();
+  updateScore();
 }
 
 async function endRun() {
@@ -285,6 +343,8 @@ function setPhase(next) {
   $('game-type').disabled = running;
   $('board').disabled = running;
   for (const el of $('custom').querySelectorAll('input, button')) el.disabled = running;
+  $('coop').disabled = running;
+  for (const b of $('pad').children) b.disabled = next !== 'playing';
 }
 
 function updateScore() {
@@ -302,9 +362,48 @@ function mainAction() {
 
 $('btn-main').addEventListener('click', mainAction);
 document.addEventListener('keydown', (e) => {
-  if (e.code !== 'Space' || e.target.closest?.('input, select, button, summary')) return;
+  if (e.target.closest?.('input, select, summary')) return;
+  const control = phase === 'playing' && game?.settings.coop && runGame.coop?.controls.find((c) => c.keys.includes(e.code));
+  if (control) {
+    e.preventDefault();
+    coopPress(control);
+    return;
+  }
+  if (e.code !== 'Space' || e.target.closest?.('button')) return;
   e.preventDefault();
   mainAction();
+});
+
+// ---------- co-op ----------
+
+function renderCoop() {
+  const coop = currentGame().coop;
+  $('coop-row').hidden = !coop;
+  $('coop').checked = coopOn();
+  $('coop-label').textContent = coop?.label ?? '';
+  const pad = $('pad');
+  pad.hidden = !coopOn();
+  pad.dataset.layout = coop?.layout ?? '';
+  pad.replaceChildren(
+    ...(coopOn() ? coop.controls : []).map((control) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = control.label;
+      b.style.gridArea = control.area;
+      b.classList.toggle('primary', control.area === 'fire');
+      b.disabled = phase !== 'playing';
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        coopPress(control);
+      });
+      return b;
+    }),
+  );
+}
+
+$('coop').addEventListener('change', () => {
+  settings.coop[settings.gameType] = $('coop').checked;
+  pickerChanged();
 });
 
 // ---------- connection panel ----------
@@ -355,6 +454,7 @@ function renderModes() {
   $('game-type').value = settings.gameType;
   for (const list of document.querySelectorAll('[data-rules]')) list.hidden = list.dataset.rules !== settings.gameType;
   renderCustom();
+  renderCoop();
 }
 
 // ---------- custom mode ----------

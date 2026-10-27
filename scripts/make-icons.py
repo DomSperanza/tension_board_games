@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw the app icon and splash screens for Android and iOS.
 
-The icon is a patch of the staggered hold lattice with a four-hold route lit like a Recall problem:
+The icon is a patch of the staggered hold lattice with a four-hold route lit like a problem:
 green start, two blue hands, pink finish. Everything is drawn here, so there are no source images.
 
 Usage: python3 scripts/make-icons.py   (needs Pillow: pip install pillow)

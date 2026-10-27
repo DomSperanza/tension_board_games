@@ -50,13 +50,14 @@ test('consecutive clusters are spread far apart and stay on the board', () => {
   }
 });
 
-test('time per cluster shrinks to the minimum', () => {
-  const game = createReach({ timeLimit: 3, minTimeLimit: 2, shrinkEvery: 1, shrinkBy: 0.5 }, seeded());
-  run(game, 3);
-  assert.equal(game.timeLimit, 2.5);
-  run(game, 2.5);
-  run(game, 2);
-  assert.equal(game.timeLimit, 2);
+test('time per cluster shrinks in steps to the minimum at level 5, then holds', () => {
+  const game = createReach({ timeLimit: 6, minTimeLimit: 2, shrinkEvery: 1 }, seeded());
+  const limits = [];
+  for (let i = 0; i < 7; i++) {
+    run(game, game.timeLimit);
+    limits.push(game.timeLimit);
+  }
+  assert.deepEqual(limits, [5, 4, 3, 2, 2, 2, 2]);
 });
 
 test('colour goes green, yellow, red as time runs low', () => {

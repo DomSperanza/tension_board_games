@@ -6,13 +6,15 @@ Gap Drop and Reach are ported from [Kilter Games](https://github.com/emre9690/ki
 
 ## Games
 
-**Gap Drop**: red bars fall down the wall. Lit holds are lava: when a bar passes you, every hand and foot has to be in its gap. The gaps swing between the far left and far right, and the bars speed up as you score.
+**Gap Drop**: red bars fall down the wall. Lit holds are lava: when a bar passes you, every hand and foot has to be in its gap. The gaps swing between the far left and far right.
 
-**Reach**: a cluster of holds lights up somewhere on the wall. Get on it before time runs out (green, then yellow, then red), then it jumps somewhere far away. The time per cluster shrinks as you go.
+**Reach**: a cluster of holds lights up somewhere on the wall. Get on it before time runs out (green, then yellow, then red), then it jumps somewhere far away.
 
-**Recall** (new in this port): a problem that grows by one hold every round, climbed from memory. Get on the yellow start hold, watch the problem play back one hold at a time (green start, blue hands, pink finish), then the lights go out and you climb it before time runs out. Survive and it gets one hold longer. Score is rounds survived.
+**Barrage** (new): a formation of purple aliens marches along the top of the wall, dropping red bolts. Bolts are lava, so traverse out of the way; every bolt you dodge scores. Volleys from the whole formation leave only narrow gaps. **Co-op:** a second player on the phone moves a blue cannon along the bottom and fires. Shots knock out bolts and destroy aliens; clear a wave and the next one arrives.
 
-Every game has **Beginner, Intermediate, Hard and Impossible** modes, plus **Custom**, which has sliders for every setting. The board counts you in with 3, 2, 1, GO and shows your score at the end. Scoring is on the honor system: if you touch a lit hold, miss the cluster or forget the problem, tap **I'm out**.
+**Serpent** (new): a snake roams the wall eating apples and growing longer. The snake is lava (apples are safe); each apple it eats scores. Solo, it steers itself. **Co-op:** a second player steers it from the phone, hunting the climber. It still won't crash into a wall or itself.
+
+Every game speeds up in steps as you score, reaches top speed at **Speed 5**, and holds there until you're out. Each has **Beginner, Intermediate, Hard and Impossible** modes, plus **Custom**, with sliders for every setting, including start and top speed. The board counts you in with 3, 2, 1, GO and shows your score at the end. Scoring is on the honor system: if you touch a lit hold (or miss the cluster), tap **I'm out**.
 
 ## Play
 
@@ -53,11 +55,13 @@ npm run cap:sync      # copy plugin bundles to src/vendor, then web assets into 
 
 ```bash
 export JAVA_HOME=/path/to/jdk-21 ANDROID_HOME=~/Android/Sdk
-npm run android:apk   # -> android/app/build/outputs/apk/debug/app-debug.apk
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:apk   # -> dist/tension_games_V<version>.apk
+adb install -r dist/tension_games_V0.2.0.apk
 ```
 
 Or copy the APK to the phone and open it (allow installing unknown apps when asked).
+
+The version comes from `package.json` (`version`); Android picks it up automatically. Bump it before each release.
 
 The app icon and splash screens are drawn by `python3 scripts/make-icons.py` (needs Pillow); rerun it after changing the design.
 
@@ -68,7 +72,7 @@ The app icon and splash screens are drawn by `python3 scripts/make-icons.py` (ne
 - `src/js/protocol.js` encodes the Aurora board LED protocol. Packets are framed with a checksum and written in 20-byte chunks to the board's UART characteristic. API v2 and v3 are both supported.
 - `src/js/ble.js` handles connect, disconnect and reconnect over two transports: Web Bluetooth in browsers and the Capacitor BLE plugin in the apps (`src/js/native.js` loads the plugins). Only the newest frame is kept while a send is in flight, so a slow link drops frames instead of lagging.
 - `src/js/layout.js` turns a board's LED table into a game grid. Every Tension board is a staggered lattice on an 8-inch pitch: the main lattice becomes the grid and the offset holds act as footholds.
-- `src/js/game.js`, `src/js/reach.js` and `src/js/recall.js` hold the game rules as pure logic with no DOM or timers, and are tested in `tests/`.
+- `src/js/game.js` (Gap Drop), `reach.js`, `barrage.js` and `serpent.js` hold the game rules as pure logic with no DOM or timers, and are tested in `tests/`. `ramp.js` is the shared speed-up to level 5.
 - `scripts/extract-boards.py` regenerates `src/js/boards-data.js` from the Tension app database, which you can download with [BoardLib](https://github.com/lemeryfertitta/BoardLib) (`boardlib database tension tension.db`).
 
 ## Roadmap
