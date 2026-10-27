@@ -1,0 +1,24 @@
+{
+  "name": "tension-board-games",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Arcade games for the Tension Board, played over Bluetooth on the web, Android and iOS.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000 --directory src",
+    "test": "node --test tests/*.test.js",
+    "cap:sync": "node scripts/vendor-capacitor.mjs && cap sync",
+    "android:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/bluetooth-le": "8.3.0",
+    "@capacitor-community/keep-awake": "8.0.1",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0f14">
+  <title>Tension Board Games</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230d0f14'/><rect x='1' y='4' width='5' height='2' fill='%235b8cff'/><rect x='11' y='4' width='4' height='2' fill='%235b8cff'/><rect x='1' y='10' width='9' height='2' fill='%23a000ff'/><rect x='14' y='10' width='1' height='2' fill='%23a000ff'/></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Tension Board Games</h1>
+  </header>
+
+  <main>
+    <div class="side">
+    <section class="card connection" id="connection">
+      <div class="status-row">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Offline</span>
+      </div>
+      <select id="board" class="board-select" aria-label="Board"></select>
+      <p class="detail" id="status-detail"></p>
+      <p class="warning" id="unsupported" hidden>No Bluetooth in this browser. Use Chrome, or Bluefy on iPhone.</p>
+      <div class="buttons">
+        <button id="btn-connect" class="primary">Connect</button>
+        <button id="btn-reconnect" hidden>Reconnect</button>
+        <button id="btn-disconnect" hidden>Disconnect</button>
+        <button id="btn-clear" hidden>Clear lights</button>
+      </div>
+    </section>
+
+    <section class="card game" id="game">
+      <select id="game-type" class="game-type" aria-label="Game"></select>
+      <div class="scoreboard">
+        <div><span class="label">Score</span><span class="value" id="score">0</span></div>
+        <div><span class="label" id="stat-label">Speed</span><span class="value" id="stat">1</span></div>
+        <div><span class="label">Best</span><span class="value" id="best">0</span></div>
+      </div>
+      <div class="modes" id="modes" role="radiogroup" aria-label="Difficulty"></div>
+      <div class="big-message" id="message">Ready</div>
+      <button id="btn-main" class="huge">Start</button>
+    </section>
+
+    <section class="card custom" id="custom" hidden>
+      <div class="custom-head">
+        <strong>Customize</strong>
+        <div class="custom-from"><span>Start from</span><div id="custom-from"></div></div>
+      </div>
+      <div class="settings-grid" id="custom-fields"></div>
+    </section>
+
+    <details class="card settings" id="settings" name="panel">
+      <summary>Settings</summary>
+      <div class="settings-grid">
+        <label class="check"><input type="checkbox" name="sounds"> Beeps</label>
+        <label class="check"><input type="checkbox" name="showAllDevices"> Show all devices</label>
+        <label class="wide">Protocol
+          <select name="apiLevel">
+            <option value="auto">Auto</option>
+            <option value="3">v3</option>
+            <option value="2">v2</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details class="card howto" name="panel">
+      <summary>Rules</summary>
+      <ul class="rules" data-rules="drop">
+        <li>Lit holds are lava.</li>
+        <li>Hands and feet in the gap when a bar passes.</li>
+        <li>Touched one? Hit <strong>I'm out</strong>.</li>
+      </ul>
+      <ul class="rules" data-rules="reach" hidden>
+        <li>Get on the lit cluster before it moves.</li>
+        <li>Green, yellow, red: time's running out.</li>
+        <li>Didn't make it? Hit <strong>I'm out</strong>.</li>
+      </ul>
+      <ul class="rules" data-rules="recall" hidden>
+        <li>Get on the yellow start hold.</li>
+        <li>Watch the problem play back: green start, blue hands, pink finish.</li>
+        <li>Lights off: climb it from memory before time runs out.</li>
+        <li>Every round adds one hold. Wrong hold or forgot? Hit <strong>I'm out</strong>.</li>
+      </ul>
+      <ul class="rules">
+        <li>Close the Tension app before connecting.</li>
+      </ul>
+    </details>
+    </div>
+
+    <section class="card board-card">
+      <div id="preview" class="preview"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
