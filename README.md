@@ -59,6 +59,8 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 Or copy the APK to the phone and open it (allow installing unknown apps when asked).
 
+The app icon and splash screens are drawn by `python3 scripts/make-icons.py` (needs Pillow); rerun it after changing the design.
+
 **iOS** needs a Mac with Xcode: run `npm run cap:sync`, then `npx cap open ios`, pick your iPhone and press Run. A free Apple ID can sign builds for your own phone; they expire after 7 days.
 
 ## How it works
