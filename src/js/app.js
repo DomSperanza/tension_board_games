@@ -14,6 +14,9 @@ import {
   BARRAGE_DIFFICULTIES,
 } from './barrage.js';
 import { createSerpent, stepSerpent, renderSerpent, serpentMessage, steerSerpent, SERPENT_DEFAULTS, SERPENT_DIFFICULTIES } from './serpent.js';
+import { createUpdraft, stepUpdraft, renderUpdraft, updraftMessage, flap, UPDRAFT_DEFAULTS, UPDRAFT_DIFFICULTIES } from './updraft.js';
+import { createRally, stepRally, renderRally, rallyMessage, movePaddle, RALLY_DEFAULTS, RALLY_DIFFICULTIES } from './rally.js';
+import { createMaze, advanceMaze, renderMaze, mazeMessage, madeIt, MAZE_DEFAULTS, MAZE_DIFFICULTIES } from './maze.js';
 import { CUSTOM_FIELDS, renderCustomPanel } from './custom.js';
 import { getBoard, BOARD_LIST, DEFAULT_BOARD_ID } from './layout.js';
 import { isNativeApp, loadPlugins } from './native.js';
@@ -49,6 +52,7 @@ const save = (key, value) => {
 // ---------- games ----------
 
 const REACH_STEP_SECONDS = 0.1;
+const MAZE_STEP_SECONDS = 0.25;
 
 // Games that move in whole steps at their own (speeding up) pace.
 const stepEvery = (step) => (g) => ({ scored: step(g).scored, delayMs: g.rowSeconds * 1000 });
@@ -124,6 +128,60 @@ const GAMES = {
         keys: [`Arrow${dir[0].toUpperCase()}${dir.slice(1)}`],
         press: (g) => steerSerpent(g, dir),
       })),
+    },
+  },
+  updraft: {
+    label: 'Updraft',
+    defaults: UPDRAFT_DEFAULTS,
+    presets: UPDRAFT_DIFFICULTIES,
+    create: createUpdraft,
+    step: stepEvery(stepUpdraft),
+    render: (g) => renderUpdraft(g),
+    message: (g) => updraftMessage(g),
+    statLabel: 'Speed',
+    stat: speedStat,
+    coop: {
+      label: 'Co-op: a second player flies the bird from the phone',
+      layout: 'single',
+      controls: [{ label: 'Flap', area: 'fire', keys: ['ArrowUp', 'KeyF'], press: (g) => flap(g) }],
+    },
+  },
+  rally: {
+    label: 'Rally',
+    defaults: RALLY_DEFAULTS,
+    presets: RALLY_DIFFICULTIES,
+    create: createRally,
+    step: stepEvery(stepRally),
+    render: (g) => renderRally(g),
+    message: (g) => rallyMessage(g),
+    statLabel: 'Speed',
+    stat: speedStat,
+    coop: {
+      label: 'Co-op: a second player moves the left paddle from the phone',
+      layout: 'pair',
+      controls: [
+        { label: '▲', area: 'up', keys: ['ArrowUp'], press: (g) => movePaddle(g, -1) },
+        { label: '▼', area: 'down', keys: ['ArrowDown'], press: (g) => movePaddle(g, 1) },
+      ],
+    },
+  },
+  maze: {
+    label: 'Maze',
+    defaults: MAZE_DEFAULTS,
+    presets: MAZE_DIFFICULTIES,
+    create: createMaze,
+    step(g) {
+      const { scored } = advanceMaze(g, MAZE_STEP_SECONDS);
+      return { scored, delayMs: MAZE_STEP_SECONDS * 1000 };
+    },
+    render: (g) => renderMaze(g),
+    message: (g) => mazeMessage(g),
+    statLabel: 'Speed',
+    stat: speedStat,
+    coop: {
+      label: 'Co-op: no timer; a partner taps Made it! at the finish',
+      layout: 'single',
+      controls: [{ label: 'Made it!', area: 'fire', keys: ['Enter', 'KeyF'], press: (g) => madeIt(g) }],
     },
   },
 };
@@ -497,7 +555,12 @@ function pickerChanged() {
 
 for (const [key, g] of Object.entries(GAMES)) $('game-type').add(new Option(g.label, key));
 
-const FAMILIES = { tb2: 'Tension Board 2', tb1: 'Tension Board 1' };
+const FAMILIES = {
+  tb2: 'Tension Board 2',
+  tb1: 'Tension Board 1',
+  'kilter-original': 'Kilter Board Original',
+  'kilter-homewall': 'Kilter Board Homewall',
+};
 for (const [family, label] of Object.entries(FAMILIES)) {
   const group = document.createElement('optgroup');
   group.label = label;

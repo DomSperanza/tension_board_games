@@ -138,6 +138,10 @@ button.huge.stop { background: var(--bad); border-color: var(--bad); color: #2b0
 /* Co-op controller: big thumb targets under the main button. */
 .pad { display: grid; gap: 8px; margin-top: 10px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 .pad[data-layout="row"] { grid-template-columns: 1fr 1.4fr 1fr; grid-template-areas: "left fire right"; }
+.pad[data-layout="single"] { grid-template-areas: "fire"; }
+.pad[data-layout="single"] button { min-height: 96px; }
+.pad[data-layout="pair"] { grid-template-columns: 1fr 1fr; grid-template-areas: "up down"; }
+.pad[data-layout="pair"] button { min-height: 96px; }
 .pad[data-layout="dpad"] { grid-template-columns: repeat(3, 1fr); grid-template-areas: ". up ." "left down right"; }
 .pad button { min-height: 64px; font-size: 1.5rem; font-weight: 700; }
 

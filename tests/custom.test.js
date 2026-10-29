@@ -6,12 +6,18 @@ import { createGame, tick, DEFAULT_SETTINGS, DIFFICULTIES } from '../src/js/game
 import { createReach, advanceReach, REACH_DEFAULTS, REACH_DIFFICULTIES } from '../src/js/reach.js';
 import { BARRAGE_DEFAULTS, BARRAGE_DIFFICULTIES } from '../src/js/barrage.js';
 import { SERPENT_DEFAULTS, SERPENT_DIFFICULTIES } from '../src/js/serpent.js';
+import { UPDRAFT_DEFAULTS, UPDRAFT_DIFFICULTIES } from '../src/js/updraft.js';
+import { RALLY_DEFAULTS, RALLY_DIFFICULTIES } from '../src/js/rally.js';
+import { MAZE_DEFAULTS, MAZE_DIFFICULTIES } from '../src/js/maze.js';
 
 const GAMES = {
   drop: { defaults: DEFAULT_SETTINGS, presets: DIFFICULTIES },
   reach: { defaults: REACH_DEFAULTS, presets: REACH_DIFFICULTIES },
   barrage: { defaults: BARRAGE_DEFAULTS, presets: BARRAGE_DIFFICULTIES },
   serpent: { defaults: SERPENT_DEFAULTS, presets: SERPENT_DIFFICULTIES },
+  updraft: { defaults: UPDRAFT_DEFAULTS, presets: UPDRAFT_DIFFICULTIES },
+  rally: { defaults: RALLY_DEFAULTS, presets: RALLY_DIFFICULTIES },
+  maze: { defaults: MAZE_DEFAULTS, presets: MAZE_DIFFICULTIES },
 };
 
 test('every custom slider edits a real game setting', () => {

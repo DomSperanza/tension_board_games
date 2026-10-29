@@ -1,14 +1,15 @@
 // Turns a board's raw LED table into a game-friendly grid.
 //
-// Every Tension board is a staggered lattice with 8-inch spacing: a main grid of holds plus a
-// second set offset half a step in x and y (TB1: the lettered columns A-K and the in-between .5
-// columns). The main grid becomes the game grid and the offset holds act as footholds;
+// Every Tension and Kilter board is a staggered lattice with 8-inch spacing: a main grid of holds
+// plus a second set offset half a step in x and y (TB1: the lettered columns A-K and the in-between
+// .5 columns; Kilter: the bolt-ons or Mainline, and the screw-ons or Auxiliary). The main grid
+// becomes the game grid and the offset holds act as footholds;
 // grid rows count from the top (row 0) because things fall downwards.
 
 import { BOARDS } from './boards-data.js';
 
 export const STEP = 8;
-export const DEFAULT_BOARD_ID = 6; // TB2 12x12
+export const DEFAULT_BOARD_ID = 'tension-6'; // TB2 12x12
 
 const mod = (v) => ((v % STEP) + STEP) % STEP;
 const mostCommon = (values) => {
@@ -17,12 +18,15 @@ const mostCommon = (values) => {
   return [...counts].sort((a, b) => b[1] - a[1])[0][0];
 };
 
-export function createBoard({ id, family, name, kickboardTop, leds }) {
+export function createBoard({ id, brand, family, name, kickboardTop, leds }) {
   const holes = leds.map(([position, x, y]) => ({ position, x, y }));
 
-  // Main grid: whichever half of the lattice has more holes (TB1 Short & Narrow's columns are B.5-I.5).
+  // Main grid: Tension uses whichever half of the lattice has more holes (TB1 Short & Narrow's columns
+  // are B.5-I.5). Kilter keeps the Mainline holds on x = 0 mod 8 even when a Full Ride kit has a few more
+  // Auxiliary holds, and only switches for an Auxiliary-only kit.
   const onZero = holes.filter((h) => mod(h.x) === 0).length;
-  const mainXMod = onZero >= holes.length - onZero ? 0 : STEP / 2;
+  const zeroWeight = brand === 'kilter' ? 2 : 1;
+  const mainXMod = onZero * zeroWeight >= holes.length - onZero ? 0 : STEP / 2;
   const mainYMod = mostCommon(holes.filter((h) => mod(h.x) === mainXMod).map((h) => mod(h.y)));
   for (const h of holes) h.main = mod(h.x) === mainXMod && mod(h.y) === mainYMod;
 
@@ -66,6 +70,7 @@ export function createBoard({ id, family, name, kickboardTop, leds }) {
   const ys = holes.map((h) => h.y);
   return {
     id,
+    brand,
     family,
     name,
     kickboardTop,
@@ -81,11 +86,13 @@ export function createBoard({ id, family, name, kickboardTop, leds }) {
   };
 }
 
-export const BOARD_LIST = BOARDS.map(({ id, family, name }) => ({ id, family, name }));
+export const BOARD_LIST = BOARDS.map(({ id, brand, family, name }) => ({ id, brand, family, name }));
 
 const cache = new Map();
+// Ids are '<brand>-<product size id>'. Bare numbers are Tension sizes, as saved before Kilter boards arrived.
 export function getBoard(id) {
-  const def = BOARDS.find((b) => b.id === Number(id)) ?? BOARDS.find((b) => b.id === DEFAULT_BOARD_ID);
+  const key = /^\d+$/.test(String(id)) ? `tension-${id}` : String(id);
+  const def = BOARDS.find((b) => b.id === key) ?? BOARDS.find((b) => b.id === DEFAULT_BOARD_ID);
   if (!cache.has(def.id)) cache.set(def.id, createBoard(def));
   return cache.get(def.id);
 }
